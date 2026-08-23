@@ -87,9 +87,9 @@ faster.
 
 | Workload | mojo-av | Reference | Speedup | Compared with |
 |---|---:|---:|---:|---|
-| rescale 1M timestamps | 58.57 ms | 890.96 ms | 15.21x | exact Python integer loop |
-| derive 5M durations | 24.05 ms | 105.97 ms | 4.41x | NumPy `diff` |
-| demux 200k IVF packets | 220.38 ms | 473.07 ms | 2.15x | PyAV / FFmpeg |
+| rescale 1M timestamps | 37.24 ms | 487.52 ms | 13.09x | exact Python integer loop |
+| derive 5M durations | 16.81 ms | 42.53 ms | 2.53x | NumPy `diff` |
+| demux 200k IVF packets | 115.55 ms | 482.87 ms | 4.18x | PyAV / FFmpeg |
 
 The benchmark validates every timing result and the total demuxed byte count
 before printing. These are measurements from this machine, not projections;
@@ -111,7 +111,8 @@ Contiguous array addresses cross the ABI as 64-bit integers and Mojo rebuilds
 typed pointers with `AnyOrigin[mut=True]`. Mojo scans IVF record headers,
 generates fixed-size WAV packet tables, rescales rational timestamps, and
 derives durations. Duration derivation uses native-width SIMD with a scalar
-remainder and switches to eight CPU workers at one million differences.
+remainder and switches to sixteen CPU workers at one million differences. The
+MAX runtime supplies Mojo 1.1's CPU `parallelize` implementation.
 Demuxed packets retain the container bytes without copying and materialize a
 payload slice only when its bytes are requested, so there is no cross-language
 allocator or lifetime protocol.

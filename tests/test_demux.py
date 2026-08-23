@@ -159,7 +159,9 @@ def test_ivf_demux_packet_parity():
 def test_demux_packet_payload_is_lazy_and_zero_copy():
     data = make_ivf()
     container = mojoav.open(io.BytesIO(data))
-    packet = next(container.demux())
+    packets = list(container.demux())
+    packet = packets[0]
+    assert len({id(item) for item in packets}) == len(packets)
     assert packet._data is container._data
     assert bytes(packet) == data[44 : 44 + packet.size]
 

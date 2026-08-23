@@ -160,23 +160,33 @@ class InputContainer:
         count = len(self._packet_offsets)
         ivf = self.format.name == "ivf"
         time_base = self._stream.time_base
+        data = self._data
+        stream = self._stream
+        offsets = self._packet_offsets
+        sizes = self._packet_sizes
+        timestamps = self._packet_pts
+        durations = self._packet_durations
+        keyframes = self._keyframes
+        packet_new = Packet.__new__
         for index in range(count):
-            offset = self._packet_offsets[index]
-            size = self._packet_sizes[index]
-            yield Packet._from_demux(
-                self._data,
-                offset + 12 if ivf else offset,
-                size,
-                self._packet_pts[index],
-                1 if self._packet_durations is None else self._packet_durations[index],
-                time_base,
-                self._stream,
-                offset,
-                True if self._keyframes is None else bool(self._keyframes[index]),
-            )
+            offset = offsets[index]
+            packet = packet_new(Packet)
+            packet._data = data
+            packet._offset = offset + 12 if ivf else offset
+            packet._size = sizes[index]
+            packet.pts = timestamps[index]
+            packet.dts = packet.pts
+            packet.duration = 1 if durations is None else durations[index]
+            packet._time_base = time_base
+            packet._stream = stream
+            packet._pos = offset
+            packet.is_keyframe = True if keyframes is None else bool(keyframes[index])
+            packet.is_corrupt = False
+            packet.opaque = None
+            yield packet
         flush = Packet()
-        flush.time_base = self._stream.time_base
-        flush.stream = self._stream
+        flush.time_base = time_base
+        flush.stream = stream
         yield flush
 
     def decode(self, *args, **kwargs):

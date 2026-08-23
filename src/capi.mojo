@@ -1,9 +1,13 @@
+from max.algorithm import parallelize
+from std.runtime import initialize_runtime
 from std.sys.info import simd_width_of
 
 
 comptime I64Ptr = UnsafePointer[Int64, AnyOrigin[mut=True]]
 comptime U8Ptr = UnsafePointer[UInt8, AnyOrigin[mut=True]]
 comptime W = simd_width_of[DType.float64]()
+comptime DURATIONS_PARALLEL_THRESHOLD = 1_000_000
+comptime DURATIONS_WORKERS = 16
 
 
 def gcd_positive(a_in: Int, b_in: Int) -> Int:
@@ -117,7 +121,20 @@ def mav_durations_from_pts(
         return -1
     var pts = I64Ptr(unsafe_from_address=pts_addr)
     var dst = I64Ptr(unsafe_from_address=dst_addr)
-    durations_range(pts, dst, 0, count - 1)
+    var differences = count - 1
+    if differences >= DURATIONS_PARALLEL_THRESHOLD:
+        initialize_runtime()
+        var workers = min(DURATIONS_WORKERS, differences)
+
+        @__parameter
+        def work(worker: Int):
+            var start = worker * differences // workers
+            var end = (worker + 1) * differences // workers
+            durations_range(pts, dst, start, end)
+
+        parallelize[work](workers, workers)
+    else:
+        durations_range(pts, dst, 0, differences)
     dst[count - 1] = Int64(final_duration)
     return 0
 

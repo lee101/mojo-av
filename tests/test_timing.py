@@ -93,10 +93,10 @@ def test_durations_simd_tail(count):
     np.testing.assert_array_equal(mojoav.durations_from_pts(values, 7), expected)
 
 
-def test_durations_parallel_threshold():
-    count = 1_000_003
+@pytest.mark.parametrize("count", [999_999, 1_000_003])
+def test_durations_parallel_threshold(count):
     values = np.arange(count, dtype=np.int64)
-    missing = 125_001
+    missing = count // 8
     values[missing] = mojoav.NOPTS_VALUE
     expected = np.ones(count, dtype=np.int64)
     expected[missing - 1 : missing + 1] = mojoav.NOPTS_VALUE
