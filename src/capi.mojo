@@ -1,13 +1,9 @@
-from std.algorithm import parallelize
-from std.gpu.host import DeviceContext
 from std.sys.info import simd_width_of
 
 
 comptime I64Ptr = UnsafePointer[Int64, AnyOrigin[mut=True]]
 comptime U8Ptr = UnsafePointer[UInt8, AnyOrigin[mut=True]]
 comptime W = simd_width_of[DType.float64]()
-comptime DURATIONS_PARALLEL_THRESHOLD = 1_000_000
-comptime DURATIONS_WORKERS = 8
 
 
 def gcd_positive(a_in: Int, b_in: Int) -> Int:
@@ -121,23 +117,7 @@ def mav_durations_from_pts(
         return -1
     var pts = I64Ptr(unsafe_from_address=pts_addr)
     var dst = I64Ptr(unsafe_from_address=dst_addr)
-    var differences = count - 1
-    if differences >= DURATIONS_PARALLEL_THRESHOLD:
-        var chunk_size = (differences + DURATIONS_WORKERS - 1) // DURATIONS_WORKERS
-
-        @parameter
-        def work(chunk: Int):
-            var start = chunk * chunk_size
-            var end = min(start + chunk_size, differences)
-            durations_range(pts, dst, start, end)
-
-        try:
-            var ctx = DeviceContext(api="cpu")
-            parallelize[work](DURATIONS_WORKERS, DURATIONS_WORKERS, ctx)
-        except:
-            durations_range(pts, dst, 0, differences)
-    else:
-        durations_range(pts, dst, 0, differences)
+    durations_range(pts, dst, 0, count - 1)
     dst[count - 1] = Int64(final_duration)
     return 0
 
