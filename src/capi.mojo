@@ -1,5 +1,3 @@
-from max.algorithm import parallelize
-from std.runtime import initialize_runtime
 from std.sys.info import simd_width_of
 
 
@@ -123,16 +121,11 @@ def mav_durations_from_pts(
     var dst = I64Ptr(unsafe_from_address=dst_addr)
     var differences = count - 1
     if differences >= DURATIONS_PARALLEL_THRESHOLD:
-        initialize_runtime()
         var workers = min(DURATIONS_WORKERS, differences)
-
-        @__parameter
-        def work(worker: Int):
+        for worker in range(workers):
             var start = worker * differences // workers
             var end = (worker + 1) * differences // workers
             durations_range(pts, dst, start, end)
-
-        parallelize[work](workers, workers)
     else:
         durations_range(pts, dst, 0, differences)
     dst[count - 1] = Int64(final_duration)

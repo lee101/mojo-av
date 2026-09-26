@@ -111,8 +111,9 @@ Contiguous array addresses cross the ABI as 64-bit integers and Mojo rebuilds
 typed pointers with `AnyOrigin[mut=True]`. Mojo scans IVF record headers,
 generates fixed-size WAV packet tables, rescales rational timestamps, and
 derives durations. Duration derivation uses native-width SIMD with a scalar
-remainder and switches to sixteen CPU workers at one million differences. The
-MAX runtime supplies Mojo 1.1's CPU `parallelize` implementation.
+remainder. At one million differences or more it splits the difference range
+into sixteen parts, each run on the calling thread: the kernel moves 16 bytes
+per difference and is bandwidth-bound, so worker threads measured slower.
 Demuxed packets retain the container bytes without copying and materialize a
 payload slice only when its bytes are requested, so there is no cross-language
 allocator or lifetime protocol.
