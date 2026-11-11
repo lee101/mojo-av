@@ -136,8 +136,8 @@ def durations_range(pts: I64Ptr, dst: I64Ptr, start: Int, end: Int):
     var nopts = Int64(-9223372036854775807 - 1)
     var vector_end = start + ((end - start) // W) * W
     for i in range(start, vector_end, W):
-        var current = pts.load[width=W](i)
-        var following = pts.load[width=W](i + 1)
+        var current = pts.unsafe_load[width=W](i)
+        var following = pts.unsafe_load[width=W](i + 1)
         var invalid = current.eq(nopts) | following.eq(nopts)
         dst.store(i, invalid.select(SIMD[DType.int64, W](nopts), following - current))
     for i in range(vector_end, end):
